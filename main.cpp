@@ -3,6 +3,8 @@
 #include <EDSDK.h>
 #include <EDSDKTypes.h>
 
+#include "err.h"
+
 #include <iostream>
 
 // g++ -g -arch i386 -I./EDSDK/Header -framework EDSDK -o eosctrl main.cpp
@@ -179,6 +181,10 @@ int main( int argc, char** argv ) {
     if ( isSDKLoaded ) {
         EdsTerminateSDK();
     }    
-    
-    return 0;
+
+    if ( err ) { 
+        cout << "Error: " << eds_error_tostring( err ) << endl;
+    }
+
+    return err;
 }
