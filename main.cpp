@@ -2,10 +2,15 @@
 #define __MACOS__
 #include <EDSDK.h>
 #include <EDSDKTypes.h>
+#include <pthread.h>
 
 #include "err.h"
 
 #include <iostream>
+
+extern "C" {
+void RunApplicationEventLoop();
+}
 
 // g++ -g -arch i386 -I./EDSDK/Header -framework EDSDK -o eosctrl main.cpp
 
@@ -117,9 +122,39 @@ static EdsError getVolume( EdsCameraRef camera, EdsVolumeRef* volume ) {
     return err;
 }
 
+static int _argc;
+static char** _argv;
+
+static void* run( void* arg );
 
 int main( int argc, char** argv ) { 
 
+    _argc = argc;
+    _argv = argv;
+    
+    pthread_t thread;
+    void* res;
+    
+    int status = pthread_create( &thread, NULL, run, NULL );
+    if ( status != 0 ) { 
+        cerr << "Failed to create thread" << endl;
+    }
+
+    cout << "Starting event loop" << endl;
+    //RunApplicationEventLoop();
+    
+    status = pthread_join( thread, &res );
+    if ( res == NULL ) { 
+        return 0;
+    }
+
+    return 1;
+}
+
+static void* run( void* ) {
+
+    sleep(10);
+    cout << "Running EDSDK code" << endl;
     EdsError err = EDS_ERR_OK; 
     EdsCameraRef camera = NULL; 
     bool isSDKLoaded = false;
@@ -186,5 +221,5 @@ int main( int argc, char** argv ) {
         cout << "Error: " << eds_error_tostring( err ) << endl;
     }
 
-    return err;
+    return NULL;
 }
