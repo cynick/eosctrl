@@ -1,2 +1,3 @@
-b main
+b main.cpp:run
+
   
