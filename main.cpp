@@ -1,5 +1,5 @@
 
-#define __MACOS__ 1
+#define __APPLE__ 1
 
 #include <EDSDK.h>
 #include <EDSDKTypes.h>
@@ -22,6 +22,33 @@ extern "C" {
 // g++ -g -arch i386 -I./EDSDK/Header -framework EDSDK -o eosctrl main.cpp
 
 using namespace std;
+
+static int _argc;
+static char** _argv;
+
+class SdkTerminator { 
+ public: 
+
+    SdkTerminator( bool _loaded ) : loaded( _loaded ) {
+        if ( loaded ) { 
+            cout <<  "SDK initialized" << endl;
+        }
+    }
+    
+    ~SdkTerminator() {
+        if ( loaded ) { 
+            cout << "Terminating SDK" << endl;
+            EdsTerminateSDK();
+        }    
+    }
+    
+ private:
+    bool loaded;
+};
+
+class Camera { 
+
+};
 
 static EdsError downloadImage( EdsDirectoryItemRef directoryItem ) {
     
@@ -84,7 +111,45 @@ EdsError EDSCALLBACK handlePropertyEvent( EdsPropertyEvent event,
 EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event, 
                                        EdsUInt32 param,
                                        EdsVoid* context ) {
-    cout << "STATE EVENT" << (int) param << endl;
+    switch ( event ) { 
+
+    case kEdsStateEvent_Shutdown:
+        cout << "Handle state event: " << "kEdsStateEvent_Shutdown" << endl;
+        break;
+        
+    case kEdsStateEvent_JobStatusChanged:
+        cout << "Handle state event: " << "kEdsStateEvent_JobStatusChanged" << endl;
+        break;
+        
+    case kEdsStateEvent_WillSoonShutDown:
+        cout << "Handle state event: " << "kEdsEvent_WillSoonShutDown" << endl;
+        break;
+        
+    case kEdsStateEvent_ShutDownTimerUpdate:
+        cout << "Handle state event: " << "kEdsStateEvent_ShutDownTimerUpdate" << endl;
+        break;
+        
+    case kEdsStateEvent_CaptureError:
+        cout << "Handle state event: " << "kEdsStateEvent_CaptureError" << endl;
+        break;
+        
+    case kEdsStateEvent_InternalError:
+        cout << "Handle state event: " << "kEdsStateEvent_InternalError" << endl;
+        break;
+        
+    case kEdsStateEvent_AfResult:
+        cout << "Handle state event: " << "kEdsStateEvent_AfResult" << endl;
+        break;
+        
+    case kEdsStateEvent_BulbExposureTime:
+        cout << "Handle state event: " << "kEdsStateEvent_BulbExposureTime" << endl;
+        break;
+        
+    default:
+        cout << "UNKNOWN state event: " << event << endl;
+    }
+
+    return EDS_ERR_OK;
 }
 
 static EdsError getCamera( EdsCameraRef *camera ) {
@@ -134,63 +199,10 @@ static EdsError getVolume( EdsCameraRef camera, EdsVolumeRef* volume ) {
     return err;
 }
 
-static int _argc;
-static char** _argv;
 
 static void* run( void* arg );
 
-int main( int argc, char** argv ) { 
 
-    _argc = argc;
-    _argv = argv;
-    
-    pthread_t thread;
-    void* res;
-
-#if 1
-    int status = pthread_create( &thread, NULL, run, NULL );
-    if ( status != 0 ) { 
-        cerr << "Failed to create thread" << endl;
-    }
-
-    //cout << "Starting event loop" << endl;
-    //RunApplicationEventLoop();
-    
-    status = pthread_join( thread, &res );
-    if ( res == NULL ) { 
-        return 0;
-    }
-#else
-    run(NULL);
-#endif
-    return 1;
-}
-
-class SdkTerminator { 
- public: 
-
-    SdkTerminator( bool _loaded ) : loaded( _loaded ) {
-        if ( loaded ) { 
-            cout <<  "SDK initialized" << endl;
-        }
-    }
-    
-    ~SdkTerminator() {
-        if ( loaded ) { 
-            cout << "Terminating SDK" << endl;
-            EdsTerminateSDK();
-        }    
-    }
-    
- private:
-    bool loaded;
-};
-
-class Camera { 
-
-
-
-};
 
 static void shoot();
 
@@ -205,8 +217,11 @@ static void shoot() {
     sleep(1);
     
     cout << "Running EDSDK code" << endl;
-    
+
     EdsError err = EDS_ERR_OK; 
+
+#if 0     
+
     bool isSDKLoaded = false;
     
     err = EdsInitializeSDK(); 
@@ -218,6 +233,7 @@ static void shoot() {
     }
     
     SdkTerminator terminator( isSDKLoaded );
+#endif
     
     EdsCameraRef camera = NULL; 
     err = getCamera( &camera );
@@ -256,7 +272,7 @@ static void shoot() {
     cout << "Opening session" << endl;
     
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
-        cout << "Failed to open session" << endl;
+        cout << "Failed to open session: " << err << endl;
         return;
     }
     
@@ -276,13 +292,6 @@ static void shoot() {
         cout << "Failed to take picture: " << err << endl;    
     }
 
-    cout << "Calling GetEvent" << endl;
-    if ( (err = EdsGetEvent()) != EDS_ERR_OK ) {
-        cout << "EdsGetEvent call failed" << endl;
-    }
-
-    cout << "Called GetEvent" << endl;
-    
     sleep(5);
 
     cout << "Unlocking camera" << endl;    
@@ -300,4 +309,46 @@ static void shoot() {
     }
     
     cout << "OK" << endl;
+}
+
+
+int main( int argc, char** argv ) { 
+
+    _argc = argc;
+    _argv = argv;
+    
+    pthread_t thread;
+    void* res;
+
+#if 1
+    EdsError err = EDS_ERR_OK; 
+    bool isSDKLoaded = false;
+    
+    err = EdsInitializeSDK(); 
+    if ( err == EDS_ERR_OK ) {
+        isSDKLoaded = true;
+    } else { 
+        cout << "Failed to load SDK" << endl;
+        return 1;
+    }
+    
+    SdkTerminator terminator( isSDKLoaded );
+
+    int status = pthread_create( &thread, NULL, run, NULL );
+    if ( status != 0 ) { 
+        cerr << "Failed to create thread" << endl;
+    }
+
+    cout << "Starting event loop" << endl;
+    RunApplicationEventLoop();
+    
+    status = pthread_join( thread, &res );
+    if ( res == NULL ) { 
+        return 0;
+    }
+#else
+    run(NULL);
+#endif
+
+    return 1;
 }
