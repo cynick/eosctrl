@@ -1,6 +1,4 @@
 
-#define __APPLE__ 1
-
 #include <EDSDK.h>
 #include <EDSDKTypes.h>
 #include <EDSDKErrors.h>
@@ -19,12 +17,12 @@ extern "C" {
     void RunApplicationEventLoop();
 }
 
-// g++ -g -arch i386 -I./EDSDK/Header -framework EDSDK -o eosctrl main.cpp
-
 using namespace std;
 
 static int _argc;
 static char** _argv;
+
+static EdsCameraRef camera;
 
 class SdkTerminator { 
  public: 
@@ -152,7 +150,7 @@ EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event,
     return EDS_ERR_OK;
 }
 
-static EdsError getCamera( EdsCameraRef *camera ) {
+static EdsError getCamera( EdsCameraRef* camera ) {
     EdsError err = EDS_ERR_OK;
     EdsCameraListRef cameraList = NULL; 
     EdsUInt32 count = 0;
@@ -220,55 +218,6 @@ static void shoot() {
 
     EdsError err = EDS_ERR_OK; 
 
-#if 0     
-
-    bool isSDKLoaded = false;
-    
-    err = EdsInitializeSDK(); 
-    if ( err == EDS_ERR_OK ) {
-        isSDKLoaded = true;
-    } else { 
-        cout << "Failed to load SDK" << endl;
-        return;
-    }
-    
-    SdkTerminator terminator( isSDKLoaded );
-#endif
-    
-    EdsCameraRef camera = NULL; 
-    err = getCamera( &camera );
-    
-    if ( err != EDS_ERR_OK ) { 
-        cout << "Failed to find camera" << endl;
-        return;
-    } 
-    
-    cout << "Camera found" << endl;
-
-    if ( (err = EdsSetObjectEventHandler( camera, 
-                                          kEdsObjectEvent_All,
-                                          handleObjectEvent,
-                                          NULL)) != EDS_ERR_OK ) {
-        cout << "Failed to set object event handler: " << err << endl;
-        return;
-    }
-
-    if ( (err = EdsSetPropertyEventHandler( camera,
-                                            kEdsPropertyEvent_All,
-                                            handlePropertyEvent, 
-                                            NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set property event handler: " << err << endl;
-        return;
-    }
-
-    if ( (err = EdsSetCameraStateEventHandler( camera,
-                                               kEdsStateEvent_All,
-                                               handleStateEvent, 
-                                               NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set state event handler: " << err << endl;
-        return;
-    }
-    
     cout << "Opening session" << endl;
     
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
@@ -311,6 +260,41 @@ static void shoot() {
     cout << "OK" << endl;
 }
 
+static void setEventHandlers() { 
+    camera = NULL; 
+    EdsError err = getCamera( &camera );
+    
+    if ( err != EDS_ERR_OK ) { 
+        cout << "Failed to find camera" << endl;
+        return;
+    } 
+    
+    cout << "Camera found: " << camera << endl;
+    
+    if ( (err = EdsSetObjectEventHandler( camera, 
+                                          kEdsObjectEvent_All,
+                                          handleObjectEvent,
+                                          NULL)) != EDS_ERR_OK ) {
+        cout << "Failed to set object event handler: " << err << endl;
+        return;
+    }
+    
+    if ( (err = EdsSetPropertyEventHandler( camera,
+                                            kEdsPropertyEvent_All,
+                                            handlePropertyEvent, 
+                                            NULL )) != EDS_ERR_OK ) { 
+        cout << "Failed to set property event handler: " << err << endl;
+        return;
+    }
+    
+    if ( (err = EdsSetCameraStateEventHandler( camera,
+                                               kEdsStateEvent_All,
+                                               handleStateEvent, 
+                                               NULL )) != EDS_ERR_OK ) { 
+        cout << "Failed to set state event handler: " << err << endl;
+        return;
+    }
+}
 
 int main( int argc, char** argv ) { 
 
@@ -333,6 +317,8 @@ int main( int argc, char** argv ) {
     }
     
     SdkTerminator terminator( isSDKLoaded );
+
+    setEventHandlers();
 
     int status = pthread_create( &thread, NULL, run, NULL );
     if ( status != 0 ) { 
