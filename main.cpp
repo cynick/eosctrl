@@ -4,6 +4,7 @@
 #include <EDSDKErrors.h>
 
 #include <pthread.h>
+#include <unistd.h>
 
 #include <string>
 using std::string;
@@ -21,6 +22,7 @@ using namespace std;
 
 static int _argc;
 static char** _argv;
+static bool isSDKLoaded;
 
 static EdsCameraRef camera;
 
@@ -44,9 +46,12 @@ class SdkTerminator {
     bool loaded;
 };
 
-class Camera { 
-
-};
+static void* exit_func(void*) { 
+    sleep( 30 );
+    cout << "Exiting" << endl;
+    exit(0);
+    return NULL;
+}
 
 static EdsError downloadImage( EdsDirectoryItemRef directoryItem ) {
     
@@ -92,7 +97,7 @@ EdsError EDSCALLBACK handleObjectEvent( EdsObjectEvent event,
         break;
         
     default:
-        cout << "Unhandled event:" << event << endl;
+        cout << "Unhandled event: " << event << endl;
         break;
     }
 
@@ -103,7 +108,10 @@ EdsError EDSCALLBACK handlePropertyEvent( EdsPropertyEvent event,
                                           EdsPropertyID property,
                                           EdsUInt32 param,
                                           EdsVoid* context ) {
-    cout << "PROPERTY EVENT" << (int) property << endl;
+    char buf[20];
+    sprintf( buf, "0x%x", event );
+    cout << "PROPERTY EVENT: " << buf << endl;
+    return EDS_ERR_OK;
 }
 
 EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event, 
@@ -155,7 +163,7 @@ static EdsError getCamera( EdsCameraRef* camera ) {
     EdsCameraListRef cameraList = NULL; 
     EdsUInt32 count = 0;
 
-    // Get camera list e
+    // Get camera list
     err = EdsGetCameraList( &cameraList );
     // Get number of cameras
     if ( err == EDS_ERR_OK ) {
@@ -207,19 +215,17 @@ static void shoot();
 static void* run( void* ) {
     
     shoot();
-    exit(0);
     return NULL;
 }    
 
 static void shoot() { 
+
     sleep(1);
     
-    cout << "Running EDSDK code" << endl;
+    cout << "Shooting" << endl;
 
     EdsError err = EDS_ERR_OK; 
 
-    cout << "Opening session" << endl;
-    
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
         cout << "Failed to open session: " << err << endl;
         return;
@@ -241,36 +247,34 @@ static void shoot() {
         cout << "Failed to take picture: " << err << endl;    
     }
 
-    sleep(5);
-
     cout << "Unlocking camera" << endl;    
     if ( (err = EdsSendStatusCommand( camera, kEdsCameraStatusCommand_UIUnLock, 0)) !=
          EDS_ERR_OK ) { 
         cout << "Failed to unlock" << endl;
         return;
     }
-    
+
     cout << "Unlocked camera" << endl;    
-    cout << "Closing session" << endl;    
-    
-    if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
-        cout << "Failed to close session: " << err << endl;
-    }
-    
+
     cout << "OK" << endl;
 }
 
-static void setEventHandlers() { 
-    camera = NULL; 
+static EdsError findCamera() { 
+    camera = NULL;
     EdsError err = getCamera( &camera );
     
     if ( err != EDS_ERR_OK ) { 
         cout << "Failed to find camera" << endl;
-        return;
+        return err;
     } 
     
     cout << "Camera found: " << camera << endl;
     
+    return err;
+}
+
+static void setEventHandlers() { 
+    EdsError err = EDS_ERR_OK;
     if ( (err = EdsSetObjectEventHandler( camera, 
                                           kEdsObjectEvent_All,
                                           handleObjectEvent,
@@ -296,17 +300,38 @@ static void setEventHandlers() {
     }
 }
 
+static void closeSession() { 
+
+    cout << "Closing session" << endl;    
+    EdsError err = EDS_ERR_OK;
+    
+    if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
+        cout << "Failed to close session: " << err << endl;
+    }
+}
+
+void cleanup() { 
+    closeSession();
+
+    if ( isSDKLoaded ) { 
+
+        cout << "Terminating SDK" << endl;
+        EdsError err = EdsTerminateSDK();
+        if ( err != EDS_ERR_OK ) { 
+            cout << "Failed to terminate SDK: " << err << endl;
+        }
+
+        cout << "Terminated SDK" << endl;
+    }
+}
+
 int main( int argc, char** argv ) { 
 
     _argc = argc;
     _argv = argv;
     
-    pthread_t thread;
-    void* res;
-
-#if 1
     EdsError err = EDS_ERR_OK; 
-    bool isSDKLoaded = false;
+    isSDKLoaded = false;
     
     err = EdsInitializeSDK(); 
     if ( err == EDS_ERR_OK ) {
@@ -316,25 +341,35 @@ int main( int argc, char** argv ) {
         return 1;
     }
     
-    SdkTerminator terminator( isSDKLoaded );
-
+    err = findCamera();
+    if ( err != EDS_ERR_OK ) { 
+        exit(1);
+    }
+    
     setEventHandlers();
-
+    
+    cout << "Opening session" << endl;
+    
+    pthread_t thread;
     int status = pthread_create( &thread, NULL, run, NULL );
     if ( status != 0 ) { 
-        cerr << "Failed to create thread" << endl;
+        cerr << "Failed to create run thread" << endl;
+    }
+
+    pthread_t exit_thread;
+    status = pthread_create( &exit_thread, NULL, exit_func, NULL );
+    if ( status != 0 ) { 
+        cerr << "Failed to create exit thread" << endl;
     }
 
     cout << "Starting event loop" << endl;
     RunApplicationEventLoop();
     
+    void* res = NULL;
     status = pthread_join( thread, &res );
     if ( res == NULL ) { 
         return 0;
     }
-#else
-    run(NULL);
-#endif
 
     return 1;
 }

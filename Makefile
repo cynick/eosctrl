@@ -6,11 +6,16 @@ CFLAGS=$(DEBUG) $(INCLUDE) -D__APPLE__
 
 FRAMEWORKS=-F./EDSDK/Framework -framework EDSDK -framework carbon
 
+EOSCTRL=eosctrl.app/Contents/MacOS/eosctrl
+
 %.o: %.cpp 
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 eosctrl: main.o err.o
-	$(CXX) $(DEBUG) -arch i386  $(FRAMEWORKS) -o eosctrl main.o err.o
+	$(CXX) $(DEBUG) -arch i386  $(FRAMEWORKS) -o $(EOSCTRL) main.o err.o
 
 clean:
-	rm -f *~ *.o;
+	rm -f *~ *.o $(EOSCTRL)
+
+run: eosctrl
+	exec eosctrl.app/Contents/MacOS/eosctrl
