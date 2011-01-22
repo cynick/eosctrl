@@ -1,4 +1,6 @@
 
+#include <CoreFoundation/CoreFoundation.h>
+
 #include <EDSDK.h>
 #include <EDSDKTypes.h>
 #include <EDSDKErrors.h>
@@ -325,10 +327,46 @@ void cleanup() {
     }
 }
 
-int main( int argc, char** argv ) { 
+extern "C" { 
+    CFDataRef callback( CFMessagePortRef local,
+                        SInt32 msgid, CFDataRef data, void *info ) {
 
+#if 0
+        CFDataRef returnData = CFDataCreate( NULL, 
+                                             "", 
+                                             1 );
+        printf("ASD %s\n", CFDataGetBytePtr(data));
+#endif
+        return NULL;
+    }
+}
+
+int main( int argc, char** argv ) { 
+    
     _argc = argc;
     _argv = argv;
+    
+    const char* prog = argv[0];
+
+#if 0
+
+    CFMessagePortRef local = 
+        CFMessagePortCreateLocal( NULL, 
+                                  CFSTR("asd"),
+                                  callback, 
+                                  NULL, 
+                                  false );
+    CFRunLoopSourceRef source = 
+        CFMessagePortCreateRunLoopSource( NULL, 
+                                          local, 0 );
+    CFRunLoopAddSource( CFRunLoopGetCurrent(), 
+                        source, 
+                        kCFRunLoopDefaultMode );
+
+    // will not return as long as message port is 
+    // still valid and source remains on run loop
+    //CFRunLoopRun(); 
+#endif
     
     EdsError err = EDS_ERR_OK; 
     isSDKLoaded = false;
@@ -370,6 +408,10 @@ int main( int argc, char** argv ) {
     if ( res == NULL ) { 
         return 0;
     }
+
+#if 0 
+    CFRelease(local);
+#endif
 
     return 1;
 }
