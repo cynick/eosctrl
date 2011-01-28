@@ -46,7 +46,7 @@ class SdkTerminator {
 };
 
 static void* exit_func(void*) { 
-    sleep( 30 );
+    sleep( 60 );
     cout << "Exiting" << endl;
     exit(0);
     return NULL;
