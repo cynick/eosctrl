@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleExecutable</key>
+  <string>eosctrl</string>
+  <key>CFBundleIconFile</key>
+  <string>/dev/null</string>
+  <key>LSUIElement</key>
+  <true/><!-- hides icon from Dock -->
+  <key>LimitLoadToSessionType</key>
+  <string>StandardIO</string>
+</dict>
+</plist>
