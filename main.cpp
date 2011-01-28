@@ -426,7 +426,7 @@ int main( int argc, char** argv ) {
         cerr << "Failed to create run thread" << endl;
     }
 
-#if 0 
+#if 1
     pthread_t exit_thread;
     status = pthread_create( &exit_thread, NULL, exit_func, NULL );
     if ( status != 0 ) { 
