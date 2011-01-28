@@ -2,14 +2,14 @@
 CXX=g++
 DEBUG=-g
 INCLUDE=-I. -I./EDSDK/Header
-CFLAGS=$(DEBUG) $(INCLUDE) -D__APPLE__
+CFLAGS=$(DEBUG) $(INCLUDE) -D__APPLE__ -arch i386
 
 FRAMEWORKS=-F./EDSDK/Framework -framework EDSDK -framework carbon
 
 EOSCTRL=eosctrl.app/Contents/MacOS/eosctrl
 
 %.o: %.cpp 
-	$(CXX) $(DEBUG) $(CFLAGS) -c -o $@ $< 
+	$(CXX) $(CFLAGS) -c -o $@ $< 
 
 eosctrl: main.o err.o util.o
 	$(CXX) $(DEBUG) -arch i386  $(FRAMEWORKS) -o $(EOSCTRL) main.o util.o err.o
