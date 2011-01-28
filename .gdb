@@ -1,3 +1,4 @@
-b main.cpp:run
+b downloadImage
+
 
   

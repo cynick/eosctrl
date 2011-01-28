@@ -8,11 +8,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <string>
-using std::string;
-string eds_error_tostring( int error );
-
-//#include "err.h"
+#include "err.h"
+#include "util.h"
 
 #include <iostream>
 
@@ -93,16 +90,17 @@ EdsError EDSCALLBACK handleObjectEvent( EdsObjectEvent event,
                                         EdsBaseRef object,
                                         EdsVoid* context ) {
     switch ( event ) {
-    case kEdsObjectEvent_DirItemRequestTransfer: 
-        cout << "DOWNLOADING" << endl;
-        downloadImage(object);
+    case kEdsObjectEvent_DirItemRequestTransfer:
+        cout << "Handling " << getObjectEventName( event ) << " event" << endl;
+        downloadImage( object );
         break;
         
     default:
-        cout << "Unhandled event: " << event << endl;
+        cout << "No handler for object event " << 
+            getObjectEventName( event ) << endl;
         break;
     }
-
+    
     return EDS_ERR_OK;
 }
 
@@ -110,53 +108,15 @@ EdsError EDSCALLBACK handlePropertyEvent( EdsPropertyEvent event,
                                           EdsPropertyID property,
                                           EdsUInt32 param,
                                           EdsVoid* context ) {
-    char buf[20];
-    sprintf( buf, "0x%x", event );
-    cout << "PROPERTY EVENT: " << buf << endl;
+    cout << "Received " << getPropertyEventName( event ) << " property event" << endl;
     return EDS_ERR_OK;
 }
 
 EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event, 
                                        EdsUInt32 param,
                                        EdsVoid* context ) {
-    switch ( event ) { 
-
-    case kEdsStateEvent_Shutdown:
-        cout << "Handle state event: " << "kEdsStateEvent_Shutdown" << endl;
-        break;
-        
-    case kEdsStateEvent_JobStatusChanged:
-        cout << "Handle state event: " << "kEdsStateEvent_JobStatusChanged" << endl;
-        break;
-        
-    case kEdsStateEvent_WillSoonShutDown:
-        cout << "Handle state event: " << "kEdsEvent_WillSoonShutDown" << endl;
-        break;
-        
-    case kEdsStateEvent_ShutDownTimerUpdate:
-        cout << "Handle state event: " << "kEdsStateEvent_ShutDownTimerUpdate" << endl;
-        break;
-        
-    case kEdsStateEvent_CaptureError:
-        cout << "Handle state event: " << "kEdsStateEvent_CaptureError" << endl;
-        break;
-        
-    case kEdsStateEvent_InternalError:
-        cout << "Handle state event: " << "kEdsStateEvent_InternalError" << endl;
-        break;
-        
-    case kEdsStateEvent_AfResult:
-        cout << "Handle state event: " << "kEdsStateEvent_AfResult" << endl;
-        break;
-        
-    case kEdsStateEvent_BulbExposureTime:
-        cout << "Handle state event: " << "kEdsStateEvent_BulbExposureTime" << endl;
-        break;
-        
-    default:
-        cout << "UNKNOWN state event: " << event << endl;
-    }
-
+    
+    cout << "Received " << getStateEventName( event ) << " state event" << endl;
     return EDS_ERR_OK;
 }
 
@@ -220,33 +180,105 @@ static void* run( void* ) {
     return NULL;
 }    
 
+
+static void dumpProperties() {
+    
+    const EdsPropertyID props[] = {
+        kEdsPropID_Unknown,
+        kEdsPropID_ProductName,
+        kEdsPropID_BodyID,
+        kEdsPropID_OwnerName,
+        kEdsPropID_MakerName,
+        kEdsPropID_DateTime,
+        kEdsPropID_FirmwareVersion,
+        kEdsPropID_BatteryLevel,
+        kEdsPropID_CFn,
+        kEdsPropID_SaveTo,
+        kEdsPropID_CurrentStorage,
+        kEdsPropID_CurrentFolder,
+        kEdsPropID_MyMenu,
+        kEdsPropID_BatteryQuality,
+        kEdsPropID_HDDirectoryStructure,
+    };
+    
+    for ( int index = 0; index < (sizeof(props) / sizeof( EdsPropertyID )); index++ ) { 
+        EdsPropertyID prop = props[ index ];
+
+        EdsError err = EDS_ERR_OK;
+        
+        EdsDataType dataType;
+        EdsUInt32 dataSize;
+        
+        if ( (err = EdsGetPropertySize( camera, prop, 0, &dataType, &dataSize ) ) ) { 
+            cout << "Failed to get property " << getPropertyName( prop ) 
+                 << ": " << getErrorString( err ) << endl;
+            continue;
+        }
+        
+        cout << 
+            "Property " << getPropertyName( prop ) << 
+            " has type " << getDataTypeName( dataType ) << endl;
+
+#if 0        
+        if ( (err = EdsGetPropertyData( camera, prop, 0, dataSize, &data ))
+             != EDS_ERR_OK ) { 
+            cout << "Failed to get property " << getPropertName( prop ) << 
+                 << ": " << getErrorString(err) << endl;
+            return;
+        }
+#endif
+        
+    }
+}
+
 static void shoot() { 
 
     sleep(1);
-    
-    cout << "Shooting" << endl;
 
     EdsError err = EDS_ERR_OK; 
 
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
-        cout << "Failed to open session: " << err << endl;
+        cout << "Failed to open session: " << getErrorString( err ) << endl;
+        return;
+    }
+
+    sleep(10);
+    //dumpProperties();
+    
+    EdsSaveTo saveTo = kEdsSaveTo_Host;
+    
+    cout << "Setting SaveTo" << endl;
+
+    if ( (err = EdsSetPropertyData( camera, kEdsPropID_SaveTo, 2, sizeof(saveTo), &saveTo )) 
+         != EDS_ERR_OK ) {
+        cout << "Failed to set kEdsPropID_saveTo: " << getErrorString( err ) << endl;
+        return;
+    }
+
+    if ( (err = EdsGetPropertyData( camera, kEdsPropID_SaveTo, 0, sizeof(saveTo), &saveTo ))
+         != EDS_ERR_OK ) { 
+        cout << "Failed to get kEdsPropID_saveTo: " << getErrorString( err ) << endl;
         return;
     }
     
+    cout << "Current value of kEdsPropID_SaveTo is " << saveTo << endl;
+
     cout << "Opened session" << endl;
 
     cout << "Locking camera" << endl;    
     
     if ( (err = EdsSendStatusCommand( camera, kEdsCameraStatusCommand_UILock, 0)) !=
          EDS_ERR_OK ) { 
-        cout << "Failed to lock camera: " << err << endl;    
+        cout << "Failed to lock camera: " << getErrorString( err ) << endl;    
         return;
     }
     
+    cout << "Locked camera" << endl;
+
     cout << "Taking picture" << endl;    
     if ( (err = EdsSendCommand( camera, kEdsCameraCommand_TakePicture, 0)) !=
          EDS_ERR_OK ) { 
-        cout << "Failed to take picture: " << err << endl;    
+        cout << "Failed to take picture: " << getErrorString( err ) << endl;    
     }
 
     cout << "Unlocking camera" << endl;    
@@ -281,7 +313,7 @@ static void setEventHandlers() {
                                           kEdsObjectEvent_All,
                                           handleObjectEvent,
                                           NULL)) != EDS_ERR_OK ) {
-        cout << "Failed to set object event handler: " << err << endl;
+        cout << "Failed to set object event handler: " << getErrorString( err ) << endl;
         return;
     }
     
@@ -289,7 +321,7 @@ static void setEventHandlers() {
                                             kEdsPropertyEvent_All,
                                             handlePropertyEvent, 
                                             NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set property event handler: " << err << endl;
+        cout << "Failed to set property event handler: " << getErrorString( err ) << endl;
         return;
     }
     
@@ -297,7 +329,7 @@ static void setEventHandlers() {
                                                kEdsStateEvent_All,
                                                handleStateEvent, 
                                                NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set state event handler: " << err << endl;
+        cout << "Failed to set state event handler: " << getErrorString( err ) << endl;
         return;
     }
 }
@@ -308,7 +340,7 @@ static void closeSession() {
     EdsError err = EDS_ERR_OK;
     
     if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
-        cout << "Failed to close session: " << err << endl;
+        cout << "Failed to close session: " << getErrorString( err ) << endl;
     }
 }
 
@@ -320,7 +352,7 @@ void cleanup() {
         cout << "Terminating SDK" << endl;
         EdsError err = EdsTerminateSDK();
         if ( err != EDS_ERR_OK ) { 
-            cout << "Failed to terminate SDK: " << err << endl;
+            cout << "Failed to terminate SDK: " << getErrorString( err ) << endl;
         }
 
         cout << "Terminated SDK" << endl;
@@ -394,11 +426,13 @@ int main( int argc, char** argv ) {
         cerr << "Failed to create run thread" << endl;
     }
 
+#if 0 
     pthread_t exit_thread;
     status = pthread_create( &exit_thread, NULL, exit_func, NULL );
     if ( status != 0 ) { 
         cerr << "Failed to create exit thread" << endl;
     }
+#endif
 
     cout << "Starting event loop" << endl;
     RunApplicationEventLoop();

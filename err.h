@@ -1,7 +1,11 @@
+#ifndef __ERR_H__
+#define __ERR_H__
 
-#include <string>
+#include <EDSDKTypes.h>
+#include <EDSDKErrors.h>
 
-using std::string;
-string eds_error_tostring( int error );
+const char* getErrorString( EdsError error );
 
+
+#endif /* __ERR_H__ */
 

@@ -1,13 +1,9 @@
 
-#include <err.h>
-#include <string>
-#include <EDSDKErrors.h>
+#include "err.h"
 
-using std::string;
-
-string eds_error_tostring( int error ) { 
+const char* getErrorString( EdsError error ) { 
     
-    string ret;
+    const char* ret;
     
     switch ( error ) {
 
@@ -487,6 +483,8 @@ string eds_error_tostring( int error ) {
         ret = "EDS_ERR_LAST_GENERIC_ERROR_PLUS_ONE";
         break;
 
+    default:
+        ret = "UKNOWN error";
     }
 
     return ret;
