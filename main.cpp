@@ -24,44 +24,14 @@ using namespace std;
 
 static int _argc;
 static char** _argv;
-static bool isSDKLoaded;
 
-EdsBaseRef camera;
+StateHolder holder;
 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static EdsError downloadImage( EdsDirectoryItemRef directoryItem ) {
-    
-    EdsError err = EDS_ERR_OK;
-    EdsStreamRef stream = NULL;
+extern EdsError downloadImage( EdsDirectoryItemRef, StateHolder* );
 
-    EdsDirectoryItemInfo dirItemInfo; 
-    
-    err = EdsGetDirectoryItemInfo( directoryItem, &dirItemInfo );
-    
-    // Create file stream for transfer destination 
-    if ( err == EDS_ERR_OK ) {
-        err = EdsCreateFileStream( dirItemInfo.szFileName,
-                                   kEdsFileCreateDisposition_CreateAlways,
-                                   kEdsAccess_ReadWrite, 
-                                   &stream );
-    }
-    
-    if ( err == EDS_ERR_OK ) {
-        err = EdsDownload( directoryItem, dirItemInfo.size, stream);
-        // Issue notification that download is complete 
-        if ( err == EDS_ERR_OK ) {
-            err = EdsDownloadComplete( directoryItem );
-        }
-    }
-
-    // Release stream 
-    if ( stream != NULL ) {
-        EdsRelease( stream );
-        stream = NULL;
-    } 
-
-    return err;
-}
 
 EdsError EDSCALLBACK handleObjectEvent( EdsObjectEvent event, 
                                         EdsBaseRef object,
@@ -69,7 +39,8 @@ EdsError EDSCALLBACK handleObjectEvent( EdsObjectEvent event,
     switch ( event ) {
     case kEdsObjectEvent_DirItemRequestTransfer:
         cout << "Handling " << getObjectEventName( event ) << " event" << endl;
-        downloadImage( object );
+        downloadImage( object, 
+                       reinterpret_cast<StateHolder*>( context ) );
         break;
         
     default:
@@ -97,11 +68,12 @@ EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event,
     return EDS_ERR_OK;
 }
 
-static EdsError getCamera( EdsCameraRef* camera ) {
+static EdsError findCamera( StateHolder* holder ) {
     
     EdsError err = EDS_ERR_OK;
     EdsCameraListRef cameraList = NULL; 
     EdsUInt32 count = 0;
+    EdsCameraRef camera;
     
     // Get camera list
     err = EdsGetCameraList( &cameraList );
@@ -119,111 +91,35 @@ static EdsError getCamera( EdsCameraRef* camera ) {
     if ( err == EDS_ERR_OK ) {
         err = EdsGetChildAtIndex( cameraList,
                                   0,
-                                  camera );
+                                  &camera );
     }
 
     // Release camera list 
     if ( cameraList != NULL ) {
         EdsRelease( cameraList );
     }
-}
 
-
-static void* run( void* arg );
-
-
-
-static void shoot();
-
-static void* run( void* ) {
-    
-    shoot();
-    return NULL;
-}    
-
-
-static void shoot() { 
-
-    sleep(1);
-
-    EdsError err = EDS_ERR_OK; 
-
-    if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
-        cout << "Failed to open session: " << getErrorString( err ) << endl;
-        return;
-    }
-
-    sleep(10);
-    //dumpProperties();
-    
-    EdsSaveTo saveTo = kEdsSaveTo_Host;
-    
-    cout << "Setting SaveTo" << endl;
-
-    if ( (err = EdsSetPropertyData( camera, kEdsPropID_SaveTo, 2, sizeof(saveTo), &saveTo )) 
-         != EDS_ERR_OK ) {
-        cout << "Failed to set kEdsPropID_saveTo: " << getErrorString( err ) << endl;
-        return;
-    }
-
-    if ( (err = EdsGetPropertyData( camera, kEdsPropID_SaveTo, 0, sizeof(saveTo), &saveTo ))
-         != EDS_ERR_OK ) { 
-        cout << "Failed to get kEdsPropID_saveTo: " << getErrorString( err ) << endl;
-        return;
-    }
-    
-    cout << "Current value of kEdsPropID_SaveTo is " << saveTo << endl;
-
-    cout << "Opened session" << endl;
-
-    cout << "Locking camera" << endl;    
-    
-    if ( (err = EdsSendStatusCommand( camera, kEdsCameraStatusCommand_UILock, 0)) !=
-         EDS_ERR_OK ) { 
-        cout << "Failed to lock camera: " << getErrorString( err ) << endl;    
-        return;
-    }
-    
-    cout << "Locked camera" << endl;
-
-    cout << "Taking picture" << endl;    
-    if ( (err = EdsSendCommand( camera, kEdsCameraCommand_TakePicture, 0)) !=
-         EDS_ERR_OK ) { 
-        cout << "Failed to take picture: " << getErrorString( err ) << endl;    
-    }
-
-    cout << "Unlocking camera" << endl;    
-    if ( (err = EdsSendStatusCommand( camera, kEdsCameraStatusCommand_UIUnLock, 0)) !=
-         EDS_ERR_OK ) { 
-        cout << "Failed to unlock" << endl;
-        return;
-    }
-
-    cout << "Unlocked camera" << endl;    
-
-    cout << "OK" << endl;
-}
-
-static EdsError findCamera() { 
-    camera = NULL;
-    EdsError err = getCamera( &camera );
-    
     if ( err != EDS_ERR_OK ) { 
         cout << "Failed to find camera" << endl;
         return err;
     } 
+
+    holder->setCameraRef( camera );
     
-    cout << "Camera found: " << camera << endl;
-    
+    cout << "Camera found: " << holder->getCameraRef() << endl;
+
     return err;
 }
 
-static void setEventHandlers() { 
+
+static void setEventHandlers( StateHolder* holder ) { 
+    EdsCameraRef camera = holder->getCameraRef();
+    
     EdsError err = EDS_ERR_OK;
     if ( (err = EdsSetObjectEventHandler( camera, 
                                           kEdsObjectEvent_All,
                                           handleObjectEvent,
-                                          NULL)) != EDS_ERR_OK ) {
+                                          holder )) != EDS_ERR_OK ) {
         cout << "Failed to set object event handler: " << getErrorString( err ) << endl;
         return;
     }
@@ -231,7 +127,7 @@ static void setEventHandlers() {
     if ( (err = EdsSetPropertyEventHandler( camera,
                                             kEdsPropertyEvent_All,
                                             handlePropertyEvent, 
-                                            NULL )) != EDS_ERR_OK ) { 
+                                            holder )) != EDS_ERR_OK ) { 
         cout << "Failed to set property event handler: " << getErrorString( err ) << endl;
         return;
     }
@@ -239,36 +135,20 @@ static void setEventHandlers() {
     if ( (err = EdsSetCameraStateEventHandler( camera,
                                                kEdsStateEvent_All,
                                                handleStateEvent, 
-                                               NULL )) != EDS_ERR_OK ) { 
+                                               holder )) != EDS_ERR_OK ) { 
         cout << "Failed to set state event handler: " << getErrorString( err ) << endl;
         return;
     }
 }
 
-static void closeSession() { 
 
-    cout << "Closing session" << endl;    
-    EdsError err = EDS_ERR_OK;
+static void* run( void* arg ) { 
+
+    StateHolder* holder = reinterpret_cast<StateHolder*>(arg);
     
-    if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
-        cout << "Failed to close session: " << getErrorString( err ) << endl;
-    }
+    shoot( holder );
 }
 
-void cleanup() { 
-    closeSession();
-
-    if ( isSDKInitialized ) { 
-
-        cout << "Terminating SDK" << endl;
-        EdsError err = EdsTerminateSDK();
-        if ( err != EDS_ERR_OK ) { 
-            cout << "Failed to terminate SDK: " << getErrorString( err ) << endl;
-        }
-
-        cout << "Terminated SDK" << endl;
-    }
-}
 
 int main( int argc, char** argv ) { 
     
@@ -277,30 +157,37 @@ int main( int argc, char** argv ) {
     
     const char* prog = argv[0];
     
+    memset( &holder, 0, sizeof( StateHolder ) );
+
+    char buf[20];
+    sprintf( buf, "0x%x", (int) &holder );
+    cout << "State holder has address " << buf << endl;
+
     EdsError err = EDS_ERR_OK; 
-    isSDKLoaded = false;
     
     err = EdsInitializeSDK(); 
-    if ( err == EDS_ERR_OK ) {
-        isSDKLoaded = true;
-    } else { 
+    if ( err != EDS_ERR_OK ) {
         cout << "Failed to load SDK" << endl;
-        return 1;
-    }
-    
-    err = findCamera();
-    if ( err != EDS_ERR_OK ) { 
         exit(1);
     }
     
-    setEventHandlers();
+    holder.setSdkInitialized( true );
+    
+    err = findCamera( &holder );
+    if ( err != EDS_ERR_OK ) { 
+        cout << "Failed to find camera" << endl;
+        exit(1);
+    }
+    
+    setEventHandlers( &holder );
     
     pthread_t thread;
-    int status = pthread_create( &thread, NULL, run, NULL );
+    int status = pthread_create( &thread, NULL, run, &holder );
     if ( status != 0 ) { 
         cerr << "Failed to create run thread" << endl;
+        exit(1);
     }
-
+    
     cout << "Starting event loop" << endl;
     RunApplicationEventLoop();
     

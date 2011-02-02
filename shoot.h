@@ -5,33 +5,42 @@
 #include <EDSDKTypes.h>
 
 class StateHolder { 
-
+    
 public: 
-    StateHolder( bool _sdkInitialized, 
-                 const EdsCameraRef _camera = NULL ) :
-        sdkInitialized( _sdkInitialized ), 
-        camera( _camera ) {
-        
-        if ( sdkInitialized ) { 
-            cout <<  "SDK initialized" << endl;
-        }
+    StateHolder() : sdkInitialized(false), cameraRef(0), frameCount(0) {}
+    
+    ~StateHolder() {}
+    
+    bool isSdkInitialized() const { 
+        return sdkInitialized;
     }
     
-    ~StateHolder() {
-        
-        if ( sdkInitialized ) { 
-            cout << "Terminating SDK" << endl;
-            EdsTerminateSDK();
-        }    
+    void setSdkInitialized( bool flag ) { 
+        this->sdkInitialized = flag;
     }
     
-    EdsCameraRef getCameraRef() const { return camera; }
+    EdsCameraRef getCameraRef() const { return cameraRef; }
+    
+    void setCameraRef( EdsCameraRef cameraRef ) {
+        this->cameraRef = cameraRef;
+    }
+
+    int getFrameCount() const { 
+        return frameCount;
+    }
+
+    void setFrameCount( int frameCount ) { 
+        this->frameCount = frameCount;
+    }
     
 private:
     bool sdkInitialized;
-    const EdsBaseRef camera;
+    EdsCameraRef cameraRef;
+    int frameCount;
 };
 
 void shoot( StateHolder* );
+
+
 
 #endif /*__SHOOT_H__*/

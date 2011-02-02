@@ -1,25 +1,114 @@
 
 #include "shoot.h"
+#include "err.h"
+
 #include <unistd.h>
+#include <pthread.h>
+#include <iostream>
 
 #include <EDSDKTypes.h>
 #include <EDSDKErrors.h>
 #include <EDSDK.h>
 
-void shoot( StateHolder* state ) { 
+
+extern pthread_mutex_t lock;
+extern pthread_cond_t cond;
+
+using namespace std;
+
+EdsError downloadImage( EdsDirectoryItemRef directoryItem, 
+                        StateHolder* holder ) {
+    
+    EdsError err = EDS_ERR_OK;
+    EdsStreamRef stream = NULL;
+
+    EdsDirectoryItemInfo dirItemInfo; 
+    
+    err = EdsGetDirectoryItemInfo( directoryItem, &dirItemInfo );
+    
+    // Create file stream for transfer destination 
+    if ( err == EDS_ERR_OK ) {
+        err = EdsCreateFileStream( dirItemInfo.szFileName,
+                                   kEdsFileCreateDisposition_CreateAlways,
+                                   kEdsAccess_ReadWrite, 
+                                   &stream );
+    }
+    
+    if ( err == EDS_ERR_OK ) {
+        err = EdsDownload( directoryItem, dirItemInfo.size, stream);
+        // Issue notification that download is complete 
+        if ( err == EDS_ERR_OK ) {
+            err = EdsDownloadComplete( directoryItem );
+        }
+    }
+
+    // Release stream 
+    if ( stream != NULL ) {
+        EdsRelease( stream );
+        stream = NULL;
+    } 
 
     sleep(1);
 
+    int status = pthread_mutex_lock( &lock );
+
+    if ( status != 0 ) { 
+        cout << "Failed to obtain lock" << endl;
+        return err;
+    }
+
+    holder->setFrameCount( holder->getFrameCount() +1 );
+    
+    status = pthread_cond_signal( &cond );
+    if ( status != 0 ) { 
+        status = pthread_mutex_unlock( &lock );
+    }
+    
+    return err;
+}
+
+static void closeSession( EdsCameraRef camera ) { 
+    
+    cout << "Closing session" << endl;    
+    EdsError err = EDS_ERR_OK;
+    
+    if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
+        cout << "Failed to close session: " << getErrorString( err ) << endl;
+    }
+
+    cout << "Session is closed" << endl;    
+}
+
+static void cleanup( StateHolder* holder ) { 
+    closeSession( holder->getCameraRef() );
+    
+    if ( holder->isSdkInitialized() ) { 
+        
+        cout << "Terminating SDK" << endl;
+        EdsError err = EdsTerminateSDK();
+        if ( err != EDS_ERR_OK ) { 
+            cout << "Failed to terminate SDK: " << getErrorString( err ) << endl;
+        }
+        
+        cout << "Terminated SDK" << endl;
+    }
+}
+
+
+void shoot( StateHolder* holder ) { 
+
+    sleep(1);
+
+    
     EdsError err = EDS_ERR_OK; 
-
-    EdsCameraRef camera = state->getCameraRef();
-
+    
+    EdsCameraRef camera = holder->getCameraRef();
+    
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
         cout << "Failed to open session: " << getErrorString( err ) << endl;
         return;
     }
 
-    sleep(10);
     //dumpProperties( camera );
     
     EdsSaveTo saveTo = kEdsSaveTo_Host;
@@ -82,71 +171,39 @@ void shoot( StateHolder* state ) {
     
     cout << "Unlocked camera" << endl;    
     
-    cout << "OK" << endl;
-}
+    cout << "Waiting for image" << endl;
 
-static EdsError findCamera() { 
-    camera = NULL;
-    EdsError err = getCamera( &camera );
+    struct timespec ts;
+    ts.tv_sec = time(NULL) + 2;
     
-    if ( err != EDS_ERR_OK ) { 
-        cout << "Failed to find camera" << endl;
-        return err;
-    } 
-    
-    cout << "Camera found: " << camera << endl;
-    
-    return err;
-}
-
-static void setEventHandlers() { 
-    EdsError err = EDS_ERR_OK;
-    if ( (err = EdsSetObjectEventHandler( camera, 
-                                          kEdsObjectEvent_All,
-                                          handleObjectEvent,
-                                          NULL)) != EDS_ERR_OK ) {
-        cout << "Failed to set object event handler: " << getErrorString( err ) << endl;
-        return;
+    int status = pthread_mutex_lock( &lock );
+    if ( status != 0 ) { 
+        cout << "Failed to obtain mutex" << endl;
     }
     
-    if ( (err = EdsSetPropertyEventHandler( camera,
-                                            kEdsPropertyEvent_All,
-                                            handlePropertyEvent, 
-                                            NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set property event handler: " << getErrorString( err ) << endl;
-        return;
-    }
-    
-    if ( (err = EdsSetCameraStateEventHandler( camera,
-                                               kEdsStateEvent_All,
-                                               handleStateEvent, 
-                                               NULL )) != EDS_ERR_OK ) { 
-        cout << "Failed to set state event handler: " << getErrorString( err ) << endl;
-        return;
-    }
-}
+    while ( holder->getFrameCount() != 1 ) { 
 
-static void closeSession() { 
-
-    cout << "Closing session" << endl;    
-    EdsError err = EDS_ERR_OK;
-    
-    if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
-        cout << "Failed to close session: " << getErrorString( err ) << endl;
-    }
-}
-
-void cleanup() { 
-    closeSession();
-
-    if ( isSDKInitialized ) { 
-
-        cout << "Terminating SDK" << endl;
-        EdsError err = EdsTerminateSDK();
-        if ( err != EDS_ERR_OK ) { 
-            cout << "Failed to terminate SDK: " << getErrorString( err ) << endl;
+        status = pthread_cond_timedwait( &cond, &lock, &ts );
+        
+        if ( status == ETIMEDOUT ) { 
+            break;
         }
-
-        cout << "Terminated SDK" << endl;
+        
+        if ( status != 0 ) { 
+            cout << "Timed wait failed" << endl;
+        }
     }
+    
+    status = pthread_mutex_unlock( &lock );
+
+    if ( status != 0 ) { 
+        cout << "Failed to unlock mutex" << endl;
+    }
+    
+    cout << "Frame received, shutting down" << endl;
+    
+    cleanup( holder );
+    
+    exit(0);
 }
+
