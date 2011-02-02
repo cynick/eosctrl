@@ -25,6 +25,12 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
     EdsDirectoryItemInfo dirItemInfo; 
     
     err = EdsGetDirectoryItemInfo( directoryItem, &dirItemInfo );
+
+    size_t index = name.find( '.' );
+    if ( index != string::npos ) { 
+        name.replace( 0, index, holder->getFilename() );
+    }
+    
     
     // Create file stream for transfer destination 
     if ( err == EDS_ERR_OK ) {

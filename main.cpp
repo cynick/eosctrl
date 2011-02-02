@@ -22,9 +22,6 @@ extern "C" {
 
 using namespace std;
 
-static int _argc;
-static char** _argv;
-
 StateHolder holder;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -152,16 +149,15 @@ static void* run( void* arg ) {
 
 int main( int argc, char** argv ) { 
     
-    _argc = argc;
-    _argv = argv;
-    
     const char* prog = argv[0];
     
     memset( &holder, 0, sizeof( StateHolder ) );
-
+    
     char buf[20];
     sprintf( buf, "0x%x", (int) &holder );
     cout << "State holder has address " << buf << endl;
+    
+    holder->setFilename( argv[1] );
 
     EdsError err = EDS_ERR_OK; 
     

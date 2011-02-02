@@ -7,7 +7,10 @@
 class StateHolder { 
     
 public: 
-    StateHolder() : sdkInitialized(false), cameraRef(0), frameCount(0) {}
+    StateHolder() : sdkInitialized(false), 
+                    cameraRef(0), 
+                    frameCount(0), 
+                    filename(0) {}
     
     ~StateHolder() {}
     
@@ -32,11 +35,21 @@ public:
     void setFrameCount( int frameCount ) { 
         this->frameCount = frameCount;
     }
+
+    const char* getFilename() const { 
+        return filename;
+    }
+
+    void setFilename( const char* filename ) { 
+        this->filename = filename;
+    }
     
 private:
     bool sdkInitialized;
     EdsCameraRef cameraRef;
     int frameCount;
+    const char* filename;
+
 };
 
 void shoot( StateHolder* );
