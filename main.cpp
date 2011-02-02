@@ -157,7 +157,7 @@ int main( int argc, char** argv ) {
     sprintf( buf, "0x%x", (int) &holder );
     cout << "State holder has address " << buf << endl;
     
-    holder->setFilename( argv[1] );
+    holder.setFilename( argv[1] );
 
     EdsError err = EDS_ERR_OK; 
     
