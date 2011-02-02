@@ -9,4 +9,6 @@ const char* getObjectEventName( EdsObjectEvent );
 const char* getStateEventName( EdsStateEvent );
 const char* getPropertyEventName( EdsPropertyEvent );
 
+void dumpProperties( EdsBaseRef );
+
 #endif /*__UTIL_H__*/

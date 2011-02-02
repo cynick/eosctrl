@@ -1,17 +1,20 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 
-#include <EDSDK.h>
 #include <EDSDKTypes.h>
 #include <EDSDKErrors.h>
+#include <EDSDK.h>
 
+#include <iostream>
 #include <pthread.h>
 #include <unistd.h>
 
 #include "err.h"
 #include "util.h"
+#include "shoot.h"
 
-#include <iostream>
+// Strange though it may seem, there doesn't seem 
+// to be a header anywhere that declares this function.
 
 extern "C" {
     void RunApplicationEventLoop();
@@ -23,34 +26,8 @@ static int _argc;
 static char** _argv;
 static bool isSDKLoaded;
 
-static EdsCameraRef camera;
+EdsBaseRef camera;
 
-class SdkTerminator { 
- public: 
-
-    SdkTerminator( bool _loaded ) : loaded( _loaded ) {
-        if ( loaded ) { 
-            cout <<  "SDK initialized" << endl;
-        }
-    }
-    
-    ~SdkTerminator() {
-        if ( loaded ) { 
-            cout << "Terminating SDK" << endl;
-            EdsTerminateSDK();
-        }    
-    }
-    
- private:
-    bool loaded;
-};
-
-static void* exit_func(void*) { 
-    sleep( 60 );
-    cout << "Exiting" << endl;
-    exit(0);
-    return NULL;
-}
 
 static EdsError downloadImage( EdsDirectoryItemRef directoryItem ) {
     
@@ -73,13 +50,13 @@ static EdsError downloadImage( EdsDirectoryItemRef directoryItem ) {
         err = EdsDownload( directoryItem, dirItemInfo.size, stream);
         // Issue notification that download is complete 
         if ( err == EDS_ERR_OK ) {
-            err = EdsDownloadComplete(directoryItem);
+            err = EdsDownloadComplete( directoryItem );
         }
     }
 
     // Release stream 
     if ( stream != NULL ) {
-        EdsRelease(stream);
+        EdsRelease( stream );
         stream = NULL;
     } 
 
@@ -121,21 +98,23 @@ EdsError EDSCALLBACK handleStateEvent( EdsStateEvent event,
 }
 
 static EdsError getCamera( EdsCameraRef* camera ) {
+    
     EdsError err = EDS_ERR_OK;
     EdsCameraListRef cameraList = NULL; 
     EdsUInt32 count = 0;
-
+    
     // Get camera list
     err = EdsGetCameraList( &cameraList );
+    
     // Get number of cameras
     if ( err == EDS_ERR_OK ) {
         err = EdsGetChildCount( cameraList, &count );
     }
-
+    
     if ( count == 0 ) {
         err = EDS_ERR_DEVICE_NOT_FOUND;
     }
-
+    
     // Get first camera retrieved 
     if ( err == EDS_ERR_OK ) {
         err = EdsGetChildAtIndex( cameraList,
@@ -147,24 +126,6 @@ static EdsError getCamera( EdsCameraRef* camera ) {
     if ( cameraList != NULL ) {
         EdsRelease( cameraList );
     }
-}
-
-static EdsError getVolume( EdsCameraRef camera, EdsVolumeRef* volume ) {
-    EdsError err = EDS_ERR_OK; 
-    EdsUInt32 count = 0;
-
-    // Get the number of camera volumes 
-    err = EdsGetChildCount(camera, &count);
-    if ( err == EDS_ERR_OK && count == 0 ) {
-        err = EDS_ERR_DIR_NOT_FOUND;
-    }
-    
-    // Get initial volume 
-    if ( err == EDS_ERR_OK ) {
-        err = EdsGetChildAtIndex( camera, 0, volume );
-    }
-    
-    return err;
 }
 
 
@@ -180,56 +141,6 @@ static void* run( void* ) {
     return NULL;
 }    
 
-
-static void dumpProperties() {
-    
-    const EdsPropertyID props[] = {
-        kEdsPropID_Unknown,
-        kEdsPropID_ProductName,
-        kEdsPropID_BodyID,
-        kEdsPropID_OwnerName,
-        kEdsPropID_MakerName,
-        kEdsPropID_DateTime,
-        kEdsPropID_FirmwareVersion,
-        kEdsPropID_BatteryLevel,
-        kEdsPropID_CFn,
-        kEdsPropID_SaveTo,
-        kEdsPropID_CurrentStorage,
-        kEdsPropID_CurrentFolder,
-        kEdsPropID_MyMenu,
-        kEdsPropID_BatteryQuality,
-        kEdsPropID_HDDirectoryStructure,
-    };
-    
-    for ( int index = 0; index < (sizeof(props) / sizeof( EdsPropertyID )); index++ ) { 
-        EdsPropertyID prop = props[ index ];
-
-        EdsError err = EDS_ERR_OK;
-        
-        EdsDataType dataType;
-        EdsUInt32 dataSize;
-        
-        if ( (err = EdsGetPropertySize( camera, prop, 0, &dataType, &dataSize ) ) ) { 
-            cout << "Failed to get property " << getPropertyName( prop ) 
-                 << ": " << getErrorString( err ) << endl;
-            continue;
-        }
-        
-        cout << 
-            "Property " << getPropertyName( prop ) << 
-            " has type " << getDataTypeName( dataType ) << endl;
-
-#if 0        
-        if ( (err = EdsGetPropertyData( camera, prop, 0, dataSize, &data ))
-             != EDS_ERR_OK ) { 
-            cout << "Failed to get property " << getPropertName( prop ) << 
-                 << ": " << getErrorString(err) << endl;
-            return;
-        }
-#endif
-        
-    }
-}
 
 static void shoot() { 
 
@@ -347,7 +258,7 @@ static void closeSession() {
 void cleanup() { 
     closeSession();
 
-    if ( isSDKLoaded ) { 
+    if ( isSDKInitialized ) { 
 
         cout << "Terminating SDK" << endl;
         EdsError err = EdsTerminateSDK();
@@ -359,46 +270,12 @@ void cleanup() {
     }
 }
 
-extern "C" { 
-    CFDataRef callback( CFMessagePortRef local,
-                        SInt32 msgid, CFDataRef data, void *info ) {
-
-#if 0
-        CFDataRef returnData = CFDataCreate( NULL, 
-                                             "", 
-                                             1 );
-        printf("ASD %s\n", CFDataGetBytePtr(data));
-#endif
-        return NULL;
-    }
-}
-
 int main( int argc, char** argv ) { 
     
     _argc = argc;
     _argv = argv;
     
     const char* prog = argv[0];
-
-#if 0
-
-    CFMessagePortRef local = 
-        CFMessagePortCreateLocal( NULL, 
-                                  CFSTR("asd"),
-                                  callback, 
-                                  NULL, 
-                                  false );
-    CFRunLoopSourceRef source = 
-        CFMessagePortCreateRunLoopSource( NULL, 
-                                          local, 0 );
-    CFRunLoopAddSource( CFRunLoopGetCurrent(), 
-                        source, 
-                        kCFRunLoopDefaultMode );
-
-    // will not return as long as message port is 
-    // still valid and source remains on run loop
-    //CFRunLoopRun(); 
-#endif
     
     EdsError err = EDS_ERR_OK; 
     isSDKLoaded = false;
@@ -418,34 +295,18 @@ int main( int argc, char** argv ) {
     
     setEventHandlers();
     
-    cout << "Opening session" << endl;
-    
     pthread_t thread;
     int status = pthread_create( &thread, NULL, run, NULL );
     if ( status != 0 ) { 
         cerr << "Failed to create run thread" << endl;
     }
 
-#if 1
-    pthread_t exit_thread;
-    status = pthread_create( &exit_thread, NULL, exit_func, NULL );
-    if ( status != 0 ) { 
-        cerr << "Failed to create exit thread" << endl;
-    }
-#endif
-
     cout << "Starting event loop" << endl;
     RunApplicationEventLoop();
     
-    void* res = NULL;
-    status = pthread_join( thread, &res );
-    if ( res == NULL ) { 
-        return 0;
-    }
-
-#if 0 
-    CFRelease(local);
-#endif
-
-    return 1;
+    // We will never get to here; the run function 
+    // will clean up all state and make an explicit call 
+    // to exit.
+    
+    exit(0);
 }

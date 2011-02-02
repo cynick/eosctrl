@@ -1,5 +1,13 @@
 
 #include "util.h"
+#include "err.h"
+
+#include <EDSDK.h>
+#include <EDSDKErrors.h>
+
+#include <iostream>
+
+using namespace std;
 
 const char* getPropertyName( EdsUInt32 propId ) {
 
@@ -336,4 +344,477 @@ const char* getStateEventName( EdsStateEvent event ) {
     }
 
     return ret;
+}
+
+
+void dumpProperties( EdsBaseRef camera ) {
+    
+    const EdsPropertyID props[] = {
+        kEdsPropID_Unknown,
+        kEdsPropID_ProductName,
+        kEdsPropID_BodyID,
+        kEdsPropID_OwnerName,
+        kEdsPropID_MakerName,
+        kEdsPropID_DateTime,
+        kEdsPropID_FirmwareVersion,
+        kEdsPropID_BatteryLevel,
+        kEdsPropID_CFn,
+        kEdsPropID_SaveTo,
+        kEdsPropID_CurrentStorage,
+        kEdsPropID_CurrentFolder,
+        kEdsPropID_MyMenu,
+        kEdsPropID_BatteryQuality,
+        kEdsPropID_HDDirectoryStructure,
+    };
+    
+    for ( int index = 0; 
+          index < (sizeof(props) / sizeof( EdsPropertyID )); 
+          index++ ) { 
+
+        EdsPropertyID prop = props[ index ];
+        
+        EdsError err = EDS_ERR_OK;
+        
+        EdsDataType dataType;
+        EdsUInt32 dataSize;
+        
+        if ( (err = EdsGetPropertySize( camera, prop, 0, 
+                                        &dataType, &dataSize ) ) ) { 
+            cout << "Failed to get property " << getPropertyName( prop ) 
+                 << ": " << getErrorString( err ) << endl;
+            continue;
+        }
+        
+        cout << 
+            "Property " << getPropertyName( prop ) << 
+            " has type=" << getDataTypeName( dataType ) << 
+            ",size=" << dataSize << endl;
+        
+
+        switch ( dataType ) { 
+            
+        case kEdsDataType_Bool:
+            {
+                EdsBool data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_String:
+            {
+                EdsChar data[ dataSize ];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                    
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Int8:
+            {
+                EdsInt8 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                    
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        case kEdsDataType_UInt8:
+            {
+                EdsUInt8 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Int16:
+            {
+                EdsInt16 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_UInt16:
+            {
+                EdsUInt16 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Int32:
+            {
+                EdsInt32 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_UInt32:
+            {
+                EdsUInt32 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Int64:
+            {
+                EdsInt64 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_UInt64:
+            {
+                EdsUInt64 data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Float:
+            {
+                EdsFloat data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Double:
+            {
+                EdsDouble data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_ByteBlock:
+            {
+                EdsInt8 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Rational:
+            {
+                EdsRational data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Point:
+            {
+                EdsPoint data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Rect:
+            {
+                EdsRect data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Time:
+            {
+                EdsTime data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        case kEdsDataType_Int8_Array:
+            {
+                EdsInt8 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Int16_Array:
+            {
+                EdsInt16 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        case kEdsDataType_Int32_Array:
+            {
+                EdsInt32 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        case kEdsDataType_UInt8_Array:
+            {
+                EdsUInt8 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_UInt16_Array:
+            {
+                EdsUInt16 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_UInt32_Array:
+            {
+                EdsUInt32 data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+        case kEdsDataType_Rational_Array:
+            {
+                EdsRational data[dataSize];
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+
+
+        case kEdsDataType_FocusInfo:
+            {
+                EdsFocusInfo data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        case kEdsDataType_PictureStyleDesc:
+            {
+                EdsPictureStyleDesc data;
+                
+                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+                                                dataSize, &data )) !=
+                     EDS_ERR_OK ) { 
+                     
+                    cout << "Failed to get property " << 
+                        getPropertyName( prop ) 
+                         << ": " << 
+                        getErrorString(err) << endl;
+                }
+            }
+            break;
+            
+        default:
+            
+            cout << "UNKNOWN data type: " << dataType << endl;
+            break;
+        }
+        
+    }
 }

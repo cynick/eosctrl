@@ -11,14 +11,20 @@ EOSCTRL=eosctrl.app/Contents/MacOS/eosctrl
 %.o: %.cpp 
 	$(CXX) $(CFLAGS) -c -o $@ $< 
 
-eosctrl: main.o err.o util.o
+eosctrl: main.o err.o util.o shoot.o
 	$(CXX) $(DEBUG) -arch i386  $(FRAMEWORKS) -o $(EOSCTRL) main.o util.o err.o
 
+foo: foo.o
+	$(CXX) $(DEBUG) -arch i386  $(FRAMEWORKS) -o foo foo.o
+
 clean:
-	rm -f *~ *.o $(EOSCTRL)
+	rm -f *~ *.o $(EOSCTRL) foo
 
 run: eosctrl
 	exec eosctrl.app/Contents/MacOS/eosctrl
 
 srun: eosctrl
 	exec sudo /usr/libexec/StartupItemContext eosctrl.app/Contents/MacOS/eosctrl
+
+all: clean eosctrl
+
