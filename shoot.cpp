@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <iostream>
+#include <string>
 
 #include <EDSDKTypes.h>
 #include <EDSDKErrors.h>
 #include <EDSDK.h>
-
 
 extern pthread_mutex_t lock;
 extern pthread_cond_t cond;
@@ -26,15 +26,16 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
     
     err = EdsGetDirectoryItemInfo( directoryItem, &dirItemInfo );
 
+    string name( dirItemInfo.szFileName );
+
     size_t index = name.find( '.' );
     if ( index != string::npos ) { 
         name.replace( 0, index, holder->getFilename() );
     }
     
-    
     // Create file stream for transfer destination 
     if ( err == EDS_ERR_OK ) {
-        err = EdsCreateFileStream( dirItemInfo.szFileName,
+        err = EdsCreateFileStream( name.c_str(), 
                                    kEdsFileCreateDisposition_CreateAlways,
                                    kEdsAccess_ReadWrite, 
                                    &stream );
