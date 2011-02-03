@@ -148,8 +148,19 @@ static void* run( void* arg ) {
 
 
 int main( int argc, char** argv ) { 
+
+    const char* prog = argv[0];    
+    const char* name = NULL;
+    int frameCount = 1;
     
-    const char* prog = argv[0];
+    if ( argc >= 2 ) { 
+        name = argv[1];
+    }
+    
+    if ( argc >= 3 ) { 
+        const char* frameCountStr = argv[2];
+        frameCount = atoi( frameCountStr );
+    }
     
     memset( &holder, 0, sizeof( StateHolder ) );
     
@@ -157,7 +168,8 @@ int main( int argc, char** argv ) {
     sprintf( buf, "0x%x", (int) &holder );
     cout << "State holder has address " << buf << endl;
     
-    holder.setFilename( argv[1] );
+    holder.setFilename( name );
+    holder.setExpectedFrameCount( frameCount );
 
     EdsError err = EDS_ERR_OK; 
     

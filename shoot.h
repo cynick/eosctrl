@@ -36,6 +36,14 @@ public:
         this->frameCount = frameCount;
     }
 
+    int getExpectedFrameCount() const {
+        return expectedFrameCount;
+    }
+
+    void setExpectedFrameCount( int expectedFrameCount ) { 
+        this->expectedFrameCount = expectedFrameCount;
+    }
+
     const char* getFilename() const { 
         return filename;
     }
@@ -43,13 +51,13 @@ public:
     void setFilename( const char* filename ) { 
         this->filename = filename;
     }
-    
+
 private:
     bool sdkInitialized;
     EdsCameraRef cameraRef;
     int frameCount;
+    int expectedFrameCount;
     const char* filename;
-
 };
 
 void shoot( StateHolder* );

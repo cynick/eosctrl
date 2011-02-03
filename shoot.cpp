@@ -1,6 +1,7 @@
 
 #include "shoot.h"
 #include "err.h"
+#include "util.h"
 
 #include <unistd.h>
 #include <pthread.h>
@@ -64,11 +65,20 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
         return err;
     }
 
+    cout << "Download of " << name.c_str() << " complete, setting framecount to "  << 
+        (holder->getFrameCount() +1) << endl;
+
     holder->setFrameCount( holder->getFrameCount() +1 );
     
     status = pthread_cond_signal( &cond );
     if ( status != 0 ) { 
-        status = pthread_mutex_unlock( &lock );
+        cout << "Failed to signal cond: " << status << endl;
+    }
+    
+    status = pthread_mutex_unlock( &lock );
+    
+    if ( status != 0 ) { 
+        cout << "Failed to release lock: " << status << endl;
     }
     
     return err;
@@ -103,10 +113,9 @@ static void cleanup( StateHolder* holder ) {
 
 
 void shoot( StateHolder* holder ) { 
-
+    
     sleep(1);
 
-    
     EdsError err = EDS_ERR_OK; 
     
     EdsCameraRef camera = holder->getCameraRef();
@@ -116,7 +125,7 @@ void shoot( StateHolder* holder ) {
         return;
     }
 
-    //dumpProperties( camera );
+    dumpProperties( camera );
     
     EdsSaveTo saveTo = kEdsSaveTo_Host;
     
@@ -178,8 +187,6 @@ void shoot( StateHolder* holder ) {
     
     cout << "Unlocked camera" << endl;    
     
-    cout << "Waiting for image" << endl;
-
     struct timespec ts;
     ts.tv_sec = time(NULL) + 2;
     
@@ -188,12 +195,16 @@ void shoot( StateHolder* holder ) {
         cout << "Failed to obtain mutex" << endl;
     }
     
-    while ( holder->getFrameCount() != 1 ) { 
+    while ( holder->getFrameCount() != holder->getExpectedFrameCount() ) { 
+        
+        cout << "Waiting for frames" << endl;
 
-        status = pthread_cond_timedwait( &cond, &lock, &ts );
+        status = pthread_cond_wait( &cond, &lock );
+
+        cout << "Finished waiting for frames" << endl;
         
         if ( status == ETIMEDOUT ) { 
-            break;
+            continue;
         }
         
         if ( status != 0 ) { 
@@ -207,7 +218,7 @@ void shoot( StateHolder* holder ) {
         cout << "Failed to unlock mutex" << endl;
     }
     
-    cout << "Frame received, shutting down" << endl;
+    cout << "Received " << holder->getFrameCount() << " frames, shutting down" << endl;
     
     cleanup( holder );
     
