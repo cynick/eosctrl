@@ -1,10 +1,10 @@
 #!/bin/bash -x
 
-export LAFAYETTE_DIR=/images/lafeyette
+export LAFAYETTE_DIR=/images/lafayette
 export LAST_FILE="last.txt";
 export EOSCTRL=eosctrl
 
-export EOSCTRL_CMD=/Users/worm/eosctrl/eosctrl.app/Contents/MacOS/eosctrl
+export EOSCTRL_CMD=/Applications/eosctrl.app/Contents/MacOS/eosctrl
 
 format-next-name () {   
     local name=$1;
@@ -63,16 +63,22 @@ shoot() {
         echo "Could not find next name!"
         return;
     fi
-    
-    #$EOSCTRL_CMD $name 2;
-    touch $LAFAYETTE_DIR/${name}.JPG;
-    
-    echo $name > $LAFAYETTE_DIR/last.txt;
 
-    if [ ! -f $name ]; then
-        warn $name;
+    local target=$LAFAYETTE_DIR/${name};
+
+    $EOSCTRL_CMD $target 2;
+    #touch $LAFAYETTE_DIR/${name}.JPG;
+    
+    if [ ! -f ${target}.CR2 -o ! -f ${target}.JPG ]; then
+        if [ ! -f ${target}.CR2 ]; then
+            warn ${target}.CR2
+        fi
+        if [ ! -f ${target}.JPG ]; then
+            warn ${target}.JPG
+        fi
+    else 
+        echo $name > $LAFAYETTE_DIR/last.txt;
     fi;
-
 }
 
 
