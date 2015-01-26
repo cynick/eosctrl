@@ -143,9 +143,19 @@ static void* run( void* arg ) {
 
     StateHolder* holder = reinterpret_cast<StateHolder*>(arg);
     
-    shoot( holder );
+    EdsError ret1 = shoot( holder );
+    EdsError ret2 = cleanup( holder );
+    
+    if ( ret1 != EDS_ERR_OK ) {
+        exit(ret1);
+    } 
+    
+    if ( ret2 != EDS_ERR_OK ) {
+        exit(ret2);
+    } 
+    
+    exit(EDS_ERR_OK);
 }
-
 
 int main( int argc, char** argv ) { 
 
@@ -176,7 +186,7 @@ int main( int argc, char** argv ) {
     err = EdsInitializeSDK(); 
     if ( err != EDS_ERR_OK ) {
         cout << "Failed to load SDK" << endl;
-        exit(1);
+        exit(err);
     }
     
     holder.setSdkInitialized( true );
@@ -184,7 +194,7 @@ int main( int argc, char** argv ) {
     err = findCamera( &holder );
     if ( err != EDS_ERR_OK ) { 
         cout << "Failed to find camera" << endl;
-        exit(1);
+        exit(err);
     }
     
     setEventHandlers( &holder );
@@ -193,7 +203,7 @@ int main( int argc, char** argv ) {
     int status = pthread_create( &thread, NULL, run, &holder );
     if ( status != 0 ) { 
         cerr << "Failed to create run thread" << endl;
-        exit(1);
+        exit(status);
     }
     
     cout << "Starting event loop" << endl;

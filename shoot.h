@@ -60,7 +60,8 @@ private:
     const char* filename;
 };
 
-void shoot( StateHolder* );
+EdsError shoot( StateHolder* );
+EdsError cleanup( StateHolder* );
 
 
 

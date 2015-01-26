@@ -26,7 +26,12 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
     EdsDirectoryItemInfo dirItemInfo; 
     
     err = EdsGetDirectoryItemInfo( directoryItem, &dirItemInfo );
-
+    if ( err != EDS_ERR_OK ) { 
+        cout << "EdsGetDirectoryItemInfo failed with " << 
+            getErrorString(err) << endl;
+        return err;
+    }
+    
     string name( dirItemInfo.szFileName );
 
     size_t index = name.find( '.' );
@@ -35,34 +40,43 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
     }
     
     // Create file stream for transfer destination 
-    if ( err == EDS_ERR_OK ) {
-        err = EdsCreateFileStream( name.c_str(), 
-                                   kEdsFileCreateDisposition_CreateAlways,
-                                   kEdsAccess_ReadWrite, 
-                                   &stream );
+    err = EdsCreateFileStream( name.c_str(), 
+                               kEdsFileCreateDisposition_CreateAlways,
+                               kEdsAccess_ReadWrite, 
+                               &stream );
+    
+    if ( err != EDS_ERR_OK ) {
+        cout << "EdsCreateFileStream failed with " << 
+            getErrorString(err) << endl;
+        return err;
     }
     
-    if ( err == EDS_ERR_OK ) {
-        err = EdsDownload( directoryItem, dirItemInfo.size, stream);
-        // Issue notification that download is complete 
-        if ( err == EDS_ERR_OK ) {
-            err = EdsDownloadComplete( directoryItem );
-        }
+    err = EdsDownload( directoryItem, dirItemInfo.size, stream);
+    if ( err != EDS_ERR_OK ) {
+        cout << "EdsDownload failed with " << 
+            getErrorString(err) << endl;
+        return err;
     }
 
+    err = EdsDownloadComplete( directoryItem );
+    if ( err != EDS_ERR_OK ) {
+        cout << "EdsDownloadComplete failed with " << err << endl;
+        return err;
+    }
+    
     // Release stream 
     if ( stream != NULL ) {
         EdsRelease( stream );
         stream = NULL;
     } 
-
+    
     sleep(1);
-
+    
     int status = pthread_mutex_lock( &lock );
-
+    
     if ( status != 0 ) { 
         cout << "Failed to obtain lock" << endl;
-        return err;
+        exit(status);
     }
 
     cout << "Download of " << name.c_str() << " complete, setting framecount to "  << 
@@ -84,20 +98,26 @@ EdsError downloadImage( EdsDirectoryItemRef directoryItem,
     return err;
 }
 
-static void closeSession( EdsCameraRef camera ) { 
+static EdsError closeSession( EdsCameraRef camera ) { 
     
     cout << "Closing session" << endl;    
     EdsError err = EDS_ERR_OK;
     
     if ( (err = EdsCloseSession(camera)) != EDS_ERR_OK ) {
         cout << "Failed to close session: " << getErrorString( err ) << endl;
+        return err;
     }
-
+    
     cout << "Session is closed" << endl;    
+    return EDS_ERR_OK;
 }
 
-static void cleanup( StateHolder* holder ) { 
-    closeSession( holder->getCameraRef() );
+EdsError cleanup( StateHolder* holder ) { 
+    EdsError err = closeSession( holder->getCameraRef() );
+    
+    if ( err != EDS_ERR_OK ) { 
+        return err;
+    }
     
     if ( holder->isSdkInitialized() ) { 
         
@@ -105,14 +125,16 @@ static void cleanup( StateHolder* holder ) {
         EdsError err = EdsTerminateSDK();
         if ( err != EDS_ERR_OK ) { 
             cout << "Failed to terminate SDK: " << getErrorString( err ) << endl;
+            return err;
         }
         
         cout << "Terminated SDK" << endl;
     }
+
+    return EDS_ERR_OK;
 }
 
-
-void shoot( StateHolder* holder ) { 
+EdsError shoot( StateHolder* holder ) { 
     
     sleep(1);
 
@@ -122,7 +144,7 @@ void shoot( StateHolder* holder ) {
     
     if ( (err = EdsOpenSession(camera)) != EDS_ERR_OK ) { 
         cout << "Failed to open session: " << getErrorString( err ) << endl;
-        return;
+        return err;
     }
 
     dumpProperties( camera );
@@ -139,7 +161,7 @@ void shoot( StateHolder* holder ) {
          != EDS_ERR_OK ) {
         cout << "Failed to set kEdsPropID_saveTo: " << 
             getErrorString( err ) << endl;
-        return;
+        return err;
     }
     
     if ( (err = EdsGetPropertyData( camera, 
@@ -149,7 +171,7 @@ void shoot( StateHolder* holder ) {
          != EDS_ERR_OK ) { 
         cout << "Failed to get kEdsPropID_saveTo: " << 
             getErrorString( err ) << endl;
-        return;
+        return err;
     }
     
     cout << "Current value of kEdsPropID_SaveTo is " << saveTo << endl;
@@ -163,7 +185,7 @@ void shoot( StateHolder* holder ) {
                                       0)) !=
          EDS_ERR_OK ) { 
         cout << "Failed to lock camera: " << getErrorString( err ) << endl;    
-        return;
+        return err;
     }
     
     cout << "Locked camera" << endl;
@@ -174,6 +196,7 @@ void shoot( StateHolder* holder ) {
                                 0)) !=
          EDS_ERR_OK ) { 
         cout << "Failed to take picture: " << getErrorString( err ) << endl;    
+        return err;
     }
     
     cout << "Unlocking camera" << endl;    
@@ -182,7 +205,7 @@ void shoot( StateHolder* holder ) {
                                       0)) !=
          EDS_ERR_OK ) { 
         cout << "Failed to unlock" << endl;
-        return;
+        return err;
     }
     
     cout << "Unlocked camera" << endl;    
@@ -220,8 +243,6 @@ void shoot( StateHolder* holder ) {
     
     cout << "Received " << holder->getFrameCount() << " frames, shutting down" << endl;
     
-    cleanup( holder );
-    
-    exit(0);
+    return EDS_ERR_OK;
 }
 
