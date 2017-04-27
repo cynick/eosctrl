@@ -230,6 +230,8 @@ const char* getPropertyEventName( EdsPropertyEvent event ) {
         ret = NULL;
         break;
     }
+
+    return ret;
 }
 
 const char* getObjectEventName( EdsObjectEvent event ) {
