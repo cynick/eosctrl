@@ -20,12 +20,11 @@ extern "C" {
     void RunApplicationEventLoop();
 }
 
+namespace eosctrl {
+
 using namespace std;
 
 StateHolder holder;
-
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 extern EdsError downloadImage( EdsDirectoryItemRef, StateHolder* );
 
@@ -157,6 +156,9 @@ static void* run( void* arg ) {
     exit(EDS_ERR_OK);
 }
 
+}
+
+using namespace eosctrl;
 int main( int argc, char** argv ) {
 
     const char* prog = argv[0];
@@ -215,3 +217,6 @@ int main( int argc, char** argv ) {
 
     exit(0);
 }
+
+
+

@@ -1,8 +1,10 @@
 #ifndef __SHOOT_H__
 #define __SHOOT_H__
 
-
 #include <EDSDKTypes.h>
+
+namespace eosctrl {
+
 
 class StateHolder {
 
@@ -63,6 +65,6 @@ private:
 EdsError shoot( StateHolder* );
 EdsError cleanup( StateHolder* );
 
-
+}
 
 #endif /*__SHOOT_H__*/

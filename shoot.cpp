@@ -12,10 +12,12 @@
 #include <EDSDKErrors.h>
 #include <EDSDK.h>
 
-extern pthread_mutex_t lock;
-extern pthread_cond_t cond;
+namespace eosctrl {
 
 using namespace std;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 EdsError downloadImage( EdsDirectoryItemRef directoryItem,
                         StateHolder* holder ) {
@@ -245,3 +247,4 @@ EdsError shoot( StateHolder* holder ) {
     return EDS_ERR_OK;
 }
 
+};
