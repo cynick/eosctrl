@@ -12,13 +12,13 @@ using namespace std;
 const char* getPropertyName( EdsUInt32 propId ) {
 
     const char* ret = NULL;
-    
-    switch ( propId ) { 
-        
+
+    switch ( propId ) {
+
     case kEdsPropID_ProductName:
         ret = "kEdsPropID_ProductName";
         break;
-        
+
     case kEdsPropID_BodyID:
         ret = "kEdsPropID_BodyID";
         break;
@@ -81,16 +81,16 @@ const char* getPropertyName( EdsUInt32 propId ) {
 }
 
 
-const char* getDataTypeName( EdsDataType dataType ) { 
+const char* getDataTypeName( EdsDataType dataType ) {
 
     const char* ret = NULL;
 
-    switch ( dataType ) { 
-        
+    switch ( dataType ) {
+
     case kEdsDataType_Unknown:
         ret = "kEdsDataType_Unknown";
         break;
-        
+
     case kEdsDataType_Bool:
         ret = "kEdsDataType_Bool";
         break;
@@ -166,7 +166,7 @@ const char* getDataTypeName( EdsDataType dataType ) {
     case kEdsDataType_Int8_Array:
         ret = "kEdsDataType_Int8_Array";
         break;
-        
+
     case kEdsDataType_Int16_Array:
         ret = "kEdsDataType_Int16_Array";
         break;
@@ -198,7 +198,7 @@ const char* getDataTypeName( EdsDataType dataType ) {
     case kEdsDataType_PictureStyleDesc:
         ret = "kEdsDataType_PictureStyleDesc";
         break;
-        
+
     default:
         ret = "UNKNOWN data type";
         break;
@@ -208,40 +208,40 @@ const char* getDataTypeName( EdsDataType dataType ) {
 
 }
 
-const char* getPropertyEventName( EdsPropertyEvent event ) { 
+const char* getPropertyEventName( EdsPropertyEvent event ) {
 
     const char* ret = NULL;
 
-    switch ( event ) { 
-        
+    switch ( event ) {
+
     case kEdsPropertyEvent_All:
         ret = "kEdsPropertyEvent_All";
         break;
-        
+
     case kEdsPropertyEvent_PropertyChanged:
         ret = "kEdsPropertyEvent_PropertyChanged";
         break;
-        
+
     case kEdsPropertyEvent_PropertyDescChanged:
         ret = "kEdsPropertyEvent_PropertyDescChanged";
         break;
-        
+
     default:
         ret = NULL;
         break;
     }
 }
 
-const char* getObjectEventName( EdsObjectEvent event ) { 
+const char* getObjectEventName( EdsObjectEvent event ) {
 
     const char* ret = NULL;
 
-    switch ( event ) { 
+    switch ( event ) {
 
     case kEdsObjectEvent_All:
         ret = "kEdsObjectEvent_All";
         break;
-        
+
     case kEdsObjectEvent_VolumeInfoChanged:
         ret = "kEdsObjectEvent_VolumeInfoChanged";
         break;
@@ -293,23 +293,23 @@ const char* getObjectEventName( EdsObjectEvent event ) {
     default:
         ret = "UNKNOWN object event";
         break;
-        
+
     }
-    
+
     return ret;
 
 }
- 
+
 const char* getStateEventName( EdsStateEvent event ) {
 
     const char* ret = NULL;
-    
-    switch ( event ) { 
+
+    switch ( event ) {
 
     case kEdsStateEvent_Shutdown:
         ret = "kEdsStateEvent_Shutdown";
         break;
-        
+
     case kEdsStateEvent_JobStatusChanged:
         ret = "kEdsStateEvent_JobStatusChanged";
         break;
@@ -348,7 +348,7 @@ const char* getStateEventName( EdsStateEvent event ) {
 
 
 void dumpProperties( EdsBaseRef camera ) {
-    
+
     const EdsPropertyID props[] = {
         kEdsPropID_Unknown,
         kEdsPropID_ProductName,
@@ -366,49 +366,48 @@ void dumpProperties( EdsBaseRef camera ) {
         kEdsPropID_BatteryQuality,
         kEdsPropID_HDDirectoryStructure,
     };
-    
-    for ( int index = 0; 
-          index < (sizeof(props) / sizeof( EdsPropertyID )); 
-          index++ ) { 
+
+    for ( int index = 0;
+          index < (sizeof(props) / sizeof( EdsPropertyID ));
+          index++ ) {
 
         EdsPropertyID prop = props[ index ];
-        
+
         EdsError err = EDS_ERR_OK;
-        
+
         EdsDataType dataType;
         EdsUInt32 dataSize;
-        
-        if ( (err = EdsGetPropertySize( camera, prop, 0, 
-                                        &dataType, &dataSize ) ) ) { 
-            cout << "Failed to get property " << getPropertyName( prop ) 
+
+        if ( (err = EdsGetPropertySize( camera, prop, 0,
+                                        &dataType, &dataSize ) ) ) {
+            cout << "Failed to get property " << getPropertyName( prop )
                  << ": " << getErrorString( err ) << endl;
             continue;
         }
-        
-        cout << 
-            "Property " << getPropertyName( prop ) << 
-            " has type=" << getDataTypeName( dataType ) << 
-            ",size=" << dataSize << endl;
-        
 
-        switch ( dataType ) { 
-            
+        cout <<
+            "Property " << getPropertyName( prop ) <<
+            " has type=" << getDataTypeName( dataType ) <<
+            ",size=" << dataSize << endl;
+
+        switch ( dataType ) {
+
         case kEdsDataType_Bool:
             {
                 EdsBool data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                    
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
 
-                cout << "Property " << 
-                    getPropertyName( prop ) << 
+                cout << "Property " <<
+                    getPropertyName( prop ) <<
                     "has value " << data;
             }
             break;
@@ -416,19 +415,19 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_String:
             {
                 EdsChar data[ dataSize ];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                    
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
 
-                cout << "Property " << 
-                    getPropertyName( prop ) << 
+                cout << "Property " <<
+                    getPropertyName( prop ) <<
                     "has value " << string(data);
             }
             break;
@@ -436,30 +435,30 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Int8:
             {
                 EdsInt8 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                    
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         case kEdsDataType_UInt8:
             {
                 EdsUInt8 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -468,14 +467,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Int16:
             {
                 EdsInt16 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -484,14 +483,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_UInt16:
             {
                 EdsUInt16 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -500,14 +499,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Int32:
             {
                 EdsInt32 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -516,14 +515,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_UInt32:
             {
                 EdsUInt32 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -532,14 +531,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Int64:
             {
                 EdsInt64 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -548,14 +547,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_UInt64:
             {
                 EdsUInt64 data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -564,14 +563,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Float:
             {
                 EdsFloat data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -580,14 +579,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Double:
             {
                 EdsDouble data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -596,14 +595,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_ByteBlock:
             {
                 EdsInt8 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -612,14 +611,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Rational:
             {
                 EdsRational data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -628,14 +627,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Point:
             {
                 EdsPoint data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -644,14 +643,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Rect:
             {
                 EdsRect data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -660,30 +659,30 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Time:
             {
                 EdsTime data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         case kEdsDataType_Int8_Array:
             {
                 EdsInt8 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -692,46 +691,46 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Int16_Array:
             {
                 EdsInt16 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         case kEdsDataType_Int32_Array:
             {
                 EdsInt32 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         case kEdsDataType_UInt8_Array:
             {
                 EdsUInt8 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -740,14 +739,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_UInt16_Array:
             {
                 EdsUInt16 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -756,14 +755,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_UInt32_Array:
             {
                 EdsUInt32 data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -772,14 +771,14 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_Rational_Array:
             {
                 EdsRational data[dataSize];
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
@@ -789,42 +788,42 @@ void dumpProperties( EdsBaseRef camera ) {
         case kEdsDataType_FocusInfo:
             {
                 EdsFocusInfo data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         case kEdsDataType_PictureStyleDesc:
             {
                 EdsPictureStyleDesc data;
-                
-                if ( (err = EdsGetPropertyData( camera, prop, 0, 
+
+                if ( (err = EdsGetPropertyData( camera, prop, 0,
                                                 dataSize, &data )) !=
-                     EDS_ERR_OK ) { 
-                     
-                    cout << "Failed to get property " << 
-                        getPropertyName( prop ) 
-                         << ": " << 
+                     EDS_ERR_OK ) {
+
+                    cout << "Failed to get property " <<
+                        getPropertyName( prop )
+                         << ": " <<
                         getErrorString(err) << endl;
                 }
             }
             break;
-            
+
         default:
-            
+
             cout << "UNKNOWN data type: " << dataType << endl;
             break;
         }
-        
+
     }
-    
+
 }
 

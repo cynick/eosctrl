@@ -1,10 +1,10 @@
 
 #include "err.h"
 
-const char* getErrorString( EdsError error ) { 
-    
+const char* getErrorString( EdsError error ) {
+
     const char* ret;
-    
+
     switch ( error ) {
 
     case EDS_ERR_UNIMPLEMENTED:
@@ -14,7 +14,7 @@ const char* getErrorString( EdsError error ) {
     case EDS_ERR_INTERNAL_ERROR:
         ret = "EDS_ERR_INTERNAL_ERROR";
         break;
-        
+
     case EDS_ERR_MEM_ALLOC_FAILED:
         ret = "EDS_ERR_MEM_ALLOC_FAILED";
         break;
@@ -478,7 +478,7 @@ const char* getErrorString( EdsError error ) {
     case EDS_ERR_TAKE_PICTURE_STROBO_CHARGE_NG:
         ret = "EDS_ERR_TAKE_PICTURE_STROBO_CHARGE_NG";
         break;
-        
+
     case EDS_ERR_LAST_GENERIC_ERROR_PLUS_ONE:
         ret = "EDS_ERR_LAST_GENERIC_ERROR_PLUS_ONE";
         break;
